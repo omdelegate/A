@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة عمان للمناديب</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; overflow-y: auto; padding: 10px; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .chat-me { background: #dcf8c6; border-radius: 15px 15px 0 15px; border: 1px solid #c5e1a5; }
+        .chat-other { background: #ffffff; border-radius: 15px 15px 15px 0; border: 1px solid #e2e8f0; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="pb-20">
+
+    <div id="loadingOverlay" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center font-black text-blue-600 gap-4">
+        <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <div class="text-xl">جاري الاتصال بقاعدة البيانات...</div>
+    </div>
+
+    <div id="authScreen" class="fixed inset-0 bg-white z-[100] hidden flex items-center justify-center p-6">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl mb-6 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <span class="text-white text-4xl font-black">🇴🇲</span>
+                </div>
+                <h1 class="text-3xl font-black text-gray-800 mb-2">منصة المناديب الأولى</h1>
+                <p class="text-gray-500 font-bold text-sm">خدمة التوصيل الأسرع في سلطنة عمان</p>
+            </div>
+
+            <div class="bg-gray-100 p-1.5 rounded-2xl mb-8 flex shadow-inner">
+                <button onclick="toggleAuth('login')" id="btnTabLogin" class="flex-1 py-4 rounded-xl font-black transition-all bg-white shadow-md text-blue-600">تسجيل دخول</button>
+                <button onclick="toggleAuth('signup')" id="btnTabSignup" class="flex-1 py-4 rounded-xl font-black transition-all text-gray-500 hover:text-gray-700">إنشاء حساب</button>
+            </div>
+
+            <div id="loginForm" class="space-y-5">
+                <div class="relative">
+                    <span class="absolute right-4 top-4 text-gray-400">📱</span>
+                    <input type="number" id="loginPhone" placeholder="رقم الهاتف (9xxxxxxx)" class="w-full p-4 pr-12 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-bold">
+                </div>
+                <div class="relative">
+                    <span class="absolute right-4 top-4 text-gray-400">🔒</span>
+                    <input type="password" id="loginPass" placeholder="كلمة السر" class="w-full p-4 pr-12 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-bold">
+                </div>
+                <button onclick="handleLogin()" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-[0.98] transition-all text-lg">دخول للمنصة</button>
+                <button onclick="handleForgotPass()" class="w-full text-sm text-gray-400 font-bold hover:text-blue-600 transition-colors">نسيت كلمة السر؟ اطلب مساعدة</button>
+            </div>
+
+            <div id="signupForm" class="space-y-4 hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="signFirst" placeholder="الاسم الأول" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                    <input type="text" id="signTribe" placeholder="القبيلة" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                </div>
+                <input type="number" id="signPhone" placeholder="رقم الهاتف العماني" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                <input type="password" id="signPass" placeholder="كلمة السر (6 أرقام على الأقل)" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                <button onclick="handleSignup()" class="w-full py-5 bg-green-600 text-white rounded-2xl font-black shadow-xl shadow-green-100 hover:bg-green-700 active:scale-[0.98] transition-all text-lg">إنشاء حسابي الآن</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 shadow-sm border-b border-gray-100 px-4 py-4">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-100">🇴🇲</div>
+                <div>
+                    <h2 class="font-black text-gray-900 text-lg leading-tight tracking-tighter">منصة المناديب</h2>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+                        <span class="text-[11px] text-gray-500 font-black"><span id="visitorCounter">20,000</span> نشط الآن</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="openChat()" class="p-3 bg-gray-50 text-gray-700 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all relative group">
+                    <span class="text-xl">💬</span>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white hidden" id="chatNotif">0</span>
+                </button>
+                
+                <div class="relative group">
+                    <button class="flex items-center gap-2 bg-gray-50 p-2 pr-4 rounded-2xl border border-transparent group-hover:border-blue-100 transition-all">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-[10px] text-gray-400 font-bold leading-none mb-1">مرحباً بك</p>
+                            <p class="text-xs font-black text-gray-800 leading-none" id="headerUserName">المستخدم</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-black">👤</div>
+                    </button>
+                    
+                    <div class="absolute left-0 mt-3 w-56 bg-white border border-gray-100 rounded-[2rem] shadow-2xl py-3 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <button onclick="openMyAds()" class="w-full text-right px-6 py-3 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-3">
+                            <span>📋</span> إعلاناتي وطلباتي
+                        </button>
+                        <button onclick="openEditProfile()" class="w-full text-right px-6 py-3 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-3">
+                            <span>⚙️</span> تعديل الحساب
+                        </button>
+                        <button onclick="openSupport()" class="w-full text-right px-6 py-3 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center justify-between">
+                            <div class="flex items-center gap-3"><span>🎧</span> مركز الدعم</div>
+                            <span id="supportNotification" class="w-2 h-2 bg-red-500 rounded-full hidden"></span>
+                        </button>
+                        <button onclick="askAdminPassword()" class="w-full text-right px-6 py-3 text-sm font-black text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-3 border-t border-gray-50 mt-2">
+                            <span>🛡️</span> لوحة الإدارة
+                        </button>
+                        <hr class="my-2 border-gray-50">
+                        <button onclick="confirmLogout()" class="w-full text-right px-6 py-3 text-sm font-black text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-3">
+                            <span>🚪</span> تسجيل الخروج
+                        </button>
+                        <button onclick="confirmDeleteAccount()" class="w-full text-right px-6 py-3 text-sm font-black text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3">
+                            <span>🗑️</span> حذف الحساب نهائياً
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto p-4 grid grid-cols-2 gap-4 mt-4">
+        <button onclick="openRequestModal()" class="bg-white p-6 rounded-[2.5rem] border-2 border-blue-100 flex flex-col items-center justify-center hover:bg-blue-50 hover:border-blue-300 transition-all group shadow-sm active:scale-95">
+            <div class="w-16 h-16 bg-blue-100 rounded-3xl flex items-center justify-center text-4xl mb-4 group-hover:scale-110 group-hover:rotate-6 transition-transform">📦</div>
+            <span class="font-black text-blue-900 text-lg">أريد مندوب</span>
+            <span class="text-[10px] text-blue-400 font-bold mt-1">اطلب توصيل غرضك الآن</span>
+        </button>
+        <button onclick="openCourierRegModal()" class="bg-white p-6 rounded-[2.5rem] border-2 border-green-100 flex flex-col items-center justify-center hover:bg-green-50 hover:border-green-300 transition-all group shadow-sm active:scale-95">
+            <div class="w-16 h-16 bg-green-100 rounded-3xl flex items-center justify-center text-4xl mb-4 group-hover:scale-110 group-hover:-rotate-6 transition-transform">🚚</div>
+            <span class="font-black text-green-900 text-lg">سجل كمندوب</span>
+            <span class="text-[10px] text-green-400 font-bold mt-1">ابدأ العمل واستلم الطلبات</span>
+        </button>
+    </div>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+        
+        <section>
+            <div class="flex justify-between items-end mb-6 px-2">
+                <div>
+                    <h3 class="font-black text-2xl text-gray-800 flex items-center gap-3">
+                        🛒 الطلبات المتاحة 
+                        <span id="ordersCount" class="text-sm bg-blue-600 text-white px-3 py-1 rounded-full shadow-lg shadow-blue-100">0</span>
+                    </h3>
+                    <p class="text-xs text-gray-400 font-bold mt-1">شاهد طلبات التوصيل المطلوبة حالياً</p>
+                </div>
+                <button onclick="openFilter()" class="flex items-center gap-2 text-xs font-black text-blue-600 bg-white border border-blue-100 px-5 py-3 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                    <span>🔍</span> تصفية ذكية
+                </button>
+            </div>
+            
+            <div id="ordersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            
+            <div id="moreOrdersBtnArea" class="hidden text-center mt-10">
+                <button onclick="renderOrders(undefined, true)" class="px-10 py-4 bg-white text-blue-600 rounded-[2rem] font-black text-sm border-2 border-blue-50 hover:border-blue-600 hover:bg-blue-50 transition-all shadow-xl active:scale-95">
+                    عرض كافة الطلبات (المزيد) ↓
+                </button>
+            </div>
+        </section>
+
+        <div class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+
+        <section>
+            <div class="flex justify-between items-end mb-6 px-2">
+                <div>
+                    <h3 class="font-black text-2xl text-gray-800 flex items-center gap-3">
+                        🛵 المناديب المتوفرين
+                        <span id="couriersCount" class="text-sm bg-green-600 text-white px-3 py-1 rounded-full shadow-lg shadow-green-100">0</span>
+                    </h3>
+                    <p class="text-xs text-gray-400 font-bold mt-1">مناديب جاهزون لخدمتك في جميع المحافظات</p>
+                </div>
+            </div>
+
+            <div id="couriersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            
+            <div id="moreCouriersBtnArea" class="hidden text-center mt-10">
+                <button onclick="renderCouriers(undefined, true)" class="px-10 py-4 bg-white text-green-600 rounded-[2rem] font-black text-sm border-2 border-green-50 hover:border-green-600 hover:bg-green-50 transition-all shadow-xl active:scale-95">
+                    عرض كافة المناديب (المزيد) ↓
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="requestModal" class="modal">
+        <div class="bg-white w-full max-w-lg rounded-[3rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
+            <button onclick="closeModal('requestModal')" class="absolute left-6 top-6 text-gray-300 hover:text-gray-600 text-2xl">✕</button>
+            
+            <h3 class="text-2xl font-black mb-1">📦 انشر طلب توصيل</h3>
+            <p class="text-gray-400 text-xs mb-8 font-bold">املأ البيانات ليراها المناديب ويتواصلوا معك</p>
+            
+            <div class="space-y-5">
+                <div class="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-50">
+                    <p class="text-[11px] font-black text-blue-600 mb-4 flex items-center gap-2">📍 نقطة الاستلام (من أين؟)</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <select id="reqGovFrom" onchange="updateCities(this, 'reqCityFrom')" class="p-4 rounded-2xl bg-white text-xs font-black border-none ring-1 ring-blue-100 focus:ring-2 focus:ring-blue-500 outline-none"></select>
+                        <select id="reqCityFrom" class="p-4 rounded-2xl bg-white text-xs font-black border-none ring-1 ring-blue-100 outline-none"></select>
+                    </div>
+                </div>
+
+                <div class="bg-orange-50/50 p-6 rounded-[2rem] border border-orange-50">
+                    <p class="text-[11px] font-black text-orange-600 mb-4 flex items-center gap-2">🏁 وجهة التسليم (إلى أين؟)</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <select id="reqGovTo" onchange="updateCities(this, 'reqCityTo')" class="p-4 rounded-2xl bg-white text-xs font-black border-none ring-1 ring-orange-100 focus:ring-2 focus:ring-orange-500 outline-none"></select>
+                        <select id="reqCityTo" class="p-4 rounded-2xl bg-white text-xs font-black border-none ring-1 ring-orange-100 outline-none"></select>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-[2rem]">
+                    <p class="text-[11px] font-black text-gray-500 mb-2 flex items-center gap-2">💰 ميزانية التوصيل المقترحة (ر.ع)</p>
+                    <div class="flex items-center gap-3">
+                        <input type="number" id="reqPrice" placeholder="مثلاً: 3" class="flex-1 bg-transparent p-1 font-black text-3xl outline-none text-blue-600">
+                        <span class="font-black text-gray-400">ريال عماني</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4 mt-10">
+                <button onclick="closeModal('requestModal')" class="flex-1 py-5 bg-gray-100 text-gray-500 rounded-2xl font-black hover:bg-gray-200 transition-all">إلغاء</button>
+                <button onclick="saveOrder()" class="flex-[2] py-5 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all">نشر الطلب الآن</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="courierRegModal" class="modal">
+        <div class="bg-white w-full max-w-lg rounded-[3rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
+            <h3 class="text-2xl font-black mb-2 text-green-900">🛵 تفعيل وضع المندوب</h3>
+            <p class="text-gray-400 text-xs mb-8 font-bold">اختر نوع التغطية التي توفرها لتبدأ باستلام الطلبات</p>
+            
+            <div class="flex bg-gray-100 p-1.5 rounded-[2rem] mb-8 shadow-inner">
+                <button id="btnCStatic" onclick="toggleCourierMode('static')" class="flex-1 p-5 bg-white border-2 border-green-600 rounded-[1.8rem] font-black text-green-700 shadow-sm transition-all flex flex-col items-center">
+                    <span class="text-xl mb-1">📍</span>
+                    <span class="text-sm">مندوب ثابت</span>
+                    <span class="text-[9px] opacity-60">يغطي مدن محددة</span>
+                </button>
+                <button id="btnCMobile" onclick="toggleCourierMode('mobile')" class="flex-1 p-5 rounded-[1.8rem] font-black text-gray-400 hover:text-gray-600 transition-all flex flex-col items-center">
+                    <span class="text-xl mb-1">✈️</span>
+                    <span class="text-sm">مندوب متحرك</span>
+                    <span class="text-[9px] opacity-60">بين المحافظات</span>
+                </button>
+            </div>
+
+            <div id="cStaticForm" class="space-y-5 animate-in fade-in duration-500">
+                <div>
+                    <label class="text-[11px] font-black text-gray-500 px-3 mb-2 block">المحافظة الرئيسية</label>
+                    <select id="cGovSt" onchange="updateCities(this, 'cCitySt', true)" class="w-full p-5 bg-gray-50 rounded-2xl font-black text-sm outline-none border-2 border-transparent focus:border-green-600 focus:bg-white transition-all"></select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-black text-gray-500 px-3 mb-2 block">المدن التي تغطيها (اضغط باستمرار للاختيار المتعدد)</label>
+                    <select id="cCitySt" multiple class="w-full h-40 p-4 bg-gray-50 rounded-2xl font-black text-sm outline-none border-2 border-transparent focus:border-green-600 focus:bg-white"></select>
+                    <p class="text-[9px] text-orange-500 font-bold mt-2 px-2">💡 نصيحة: اختر المدن التي تتواجد فيها باستمرار</p>
+                </div>
+            </div>
+
+            <div id="cMobileForm" class="hidden space-y-5 animate-in fade-in duration-500">
+                <label class="text-[11px] font-black text-gray-500 px-3 mb-2 block">حدد المحافظات التي يشملها خط سيرك:</label>
+                <div id="govChecklist" class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
+                    </div>
+            </div>
+
+            <div class="flex gap-4 mt-10">
+                <button onclick="closeModal('courierRegModal')" class="flex-1 py-5 bg-gray-100 text-gray-500 rounded-2xl font-black">تراجع</button>
+                <button onclick="saveCourier()" class="flex-[2] py-5 bg-green-600 text-white rounded-2xl font-black shadow-xl shadow-green-100 hover:bg-green-700 transition-all">تفعيل الحساب كمندوب</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="filterModal" class="modal">
+        <div class="bg-white w-full max-w-md rounded-[3rem] p-8 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
+            <h3 class="text-2xl font-black mb-8 flex items-center gap-3">🔍 تخصيص العرض</h3>
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[11px] font-black text-gray-400 mb-2 block px-2">حسب المحافظة</label>
+                    <select id="filterGov" onchange="updateCities(this, 'filterCity', false, true)" class="w-full p-5 bg-gray-50 rounded-2xl font-black text-sm outline-none focus:ring-2 ring-blue-500 transition-all"></select>
+                </div>
+                <div id="filterCityDiv" class="hidden">
+                    <label class="text-[11px] font-black text-gray-400 mb-2 block px-2">حسب المدينة</label>
+                    <select id="filterCity" class="w-full p-5 bg-gray-50 rounded-2xl font-black text-sm outline-none focus:ring-2 ring-blue-500 transition-all"></select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-black text-gray-400 mb-2 block px-2">ترتيب حسب</label>
+                    <select id="filterSort" class="w-full p-5 bg-gray-50 rounded-2xl font-black text-sm outline-none focus:ring-2 ring-blue-500 transition-all">
+                        <option value="new">الأحدث نشاطاً</option>
+                        <option value="old">الأقدم نشاطاً</option>
+                        <option value="price_high">السعر الأعلى أولاً</option>
+                        <option value="price_low">السعر الأقل أولاً</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-4 mt-10">
+                <button onclick="closeModal('filterModal')" class="flex-1 py-4 bg-gray-100 rounded-2xl font-black text-gray-500 hover:bg-gray-200">إغلاق</button>
+                <button onclick="applyFilter()" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100">تطبيق التغييرات</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="modal">
+        <div class="bg-white w-full h-full md:w-[90%] md:h-[90vh] md:rounded-[3rem] overflow-hidden flex flex-col relative shadow-2xl animate-in zoom-in duration-300">
+            <div class="bg-blue-600 p-6 flex justify-between items-center text-white shrink-0">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">💬</div>
+                    <div>
+                        <h3 class="font-black text-xl leading-none">المجالس العُمانية</h3>
+                        <p class="text-[10px] opacity-70 font-bold mt-1" id="currentRoomName">جاري التحميل...</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('chatModal')" class="bg-white/20 hover:bg-white/30 p-3 rounded-2xl text-xs font-black transition-colors">إغلاق المحادثة</button>
+            </div>
+            
+            <div class="flex flex-1 overflow-hidden">
+                <div class="w-20 md:w-64 bg-gray-50 border-l border-gray-100 overflow-y-auto shrink-0 scroll-smooth" id="roomsList">
+                    </div>
+                
+                <div class="flex-1 flex flex-col bg-slate-100 relative">
+                    <div id="chatMessages" class="flex-1 p-6 overflow-y-auto space-y-6 flex flex-col scroll-smooth">
+                        <div class="flex justify-center items-center h-full text-gray-400 font-bold text-sm">اختر غرفة لبدء الدردشة</div>
+                    </div>
+                    
+                    <div class="p-6 bg-white border-t border-gray-100 shrink-0">
+                        <div class="max-w-4xl mx-auto flex gap-3">
+                            <input type="text" id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="اكتب رسالتك هنا..." class="flex-1 p-5 bg-gray-100 rounded-[2rem] outline-none text-sm font-bold focus:bg-white focus:ring-2 ring-blue-500 transition-all">
+                            <button onclick="sendChatMessage()" class="w-16 h-16 bg-blue-600 text-white rounded-[2rem] flex items-center justify-center text-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 active:scale-90 transition-all">◀</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="myAdsModal" class="modal">
+        <div class="bg-white w-full max-w-lg rounded-[3rem] p-8 shadow-2xl max-h-[85vh] overflow-y-auto animate-in fade-in duration-300">
+            <h3 class="text-2xl font-black mb-8 flex items-center gap-4">📋 لوحة إعلاناتي</h3>
+            <div class="space-y-10">
+                <section>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-sm font-black">📦</span>
+                        <p class="text-sm font-black text-gray-800 underline decoration-blue-500 decoration-4 underline-offset-8">طلباتي التي قمت بنشرها:</p>
+                    </div>
+                    <div id="myOrdersList" class="space-y-4"></div>
+                </section>
+                
+                <section>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-sm font-black">🚚</span>
+                        <p class="text-sm font-black text-gray-800 underline decoration-green-500 decoration-4 underline-offset-8">حسابي المهني (كمندوب):</p>
+                    </div>
+                    <div id="myCouriersList" class="space-y-4"></div>
+                </section>
+            </div>
+            <button onclick="closeModal('myAdsModal')" class="w-full mt-10 py-5 bg-gray-100 rounded-[2rem] font-black text-gray-500 hover:bg-gray-200 transition-all">العودة للرئيسية</button>
+        </div>
+    </div>
+
+    <div id="editProfileModal" class="modal">
+        <div class="bg-white w-full max-w-md rounded-[3rem] p-8 shadow-2xl animate-in zoom-in duration-300">
+            <h3 class="text-2xl font-black mb-2 flex items-center gap-3">⚙️ إعدادات الحساب</h3>
+            <p class="text-xs text-gray-400 font-bold mb-8 px-1">قم بتحديث معلوماتك الشخصية</p>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-gray-400 px-2">الاسم</label>
+                        <input type="text" id="editName" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:border-blue-500 font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-gray-400 px-2">القبيلة</label>
+                        <input type="text" id="editTribe" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:border-blue-500 font-bold">
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-gray-400 px-2">رقم الهاتف (لا يمكن تغييره)</label>
+                    <input type="number" id="editPhone" disabled class="w-full p-4 bg-gray-100 border rounded-2xl outline-none font-bold text-gray-400">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-gray-400 px-2">كلمة السر الجديدة</label>
+                    <input type="password" id="editPass" placeholder="اتركها فارغة لعدم التغيير" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:border-blue-500 font-bold">
+                </div>
+            </div>
+            <div class="flex gap-4 mt-10">
+                <button onclick="closeModal('editProfileModal')" class="flex-1 py-4 bg-gray-100 rounded-2xl font-black text-gray-500">إلغاء</button>
+                <button onclick="saveProfile()" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100">حفظ التغييرات</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="supportModal" class="modal">
+        <div class="bg-white w-full max-w-lg rounded-[3rem] p-8 shadow-2xl flex flex-col h-[85vh] relative animate-in slide-in-from-top-10 duration-300">
+            <h3 class="text-2xl font-black mb-2 flex items-center gap-3">🎧 مكتب المساعدة</h3>
+            <p class="text-[11px] text-gray-500 mb-6 font-bold">تواصل مباشرة مع إدارة المنصة للاقتراحات أو الشكاوى</p>
+            
+            <div id="supportChat" class="flex-1 bg-gray-50 rounded-[2.5rem] p-6 overflow-y-auto space-y-4 mb-6 flex flex-col border border-gray-100 shadow-inner">
+                </div>
+            
+            <div class="space-y-3">
+                <textarea id="supportText" placeholder="اكتب استفسارك هنا بكل وضوح..." class="w-full p-5 bg-gray-100 rounded-[2rem] outline-none text-sm font-bold resize-none h-28 focus:bg-white focus:ring-2 ring-blue-500 transition-all"></textarea>
+                <div class="flex gap-3">
+                    <button onclick="closeModal('supportModal')" class="flex-1 py-4 bg-gray-200 rounded-[1.5rem] font-black text-gray-500">إغلاق</button>
+                    <button onclick="sendSupportMessage()" class="flex-[3] py-4 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all">إرسال للمسؤولين</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminModal" class="modal">
+        <div class="bg-slate-900 w-full h-full p-6 flex flex-col">
+            <div class="flex justify-between items-center mb-10 bg-white/5 p-6 rounded-[2.5rem]">
+                <div class="flex items-center gap-4 text-white">
+                    <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-2xl shadow-2xl shadow-blue-500/20">🛡️</div>
+                    <div>
+                        <h3 class="text-2xl font-black leading-none">الإدارة العليا</h3>
+                        <p class="text-xs text-blue-400 font-bold mt-2">نظام التحكم الكامل بالمحتوى</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('adminModal')" class="px-8 py-4 bg-red-600/20 text-red-500 border border-red-600/30 rounded-2xl font-black hover:bg-red-600 hover:text-white transition-all">خروج آمن</button>
+            </div>
+            
+            <div class="flex gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide px-2">
+                <button onclick="switchAdminTab('users')" id="adminTabUsers" class="shrink-0 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2">
+                    <span>👥</span> الأعضاء
+                </button>
+                <button onclick="switchAdminTab('inbox')" id="adminTabInbox" class="shrink-0 px-8 py-4 bg-white/5 text-gray-400 rounded-2xl font-black hover:bg-white/10 transition-all flex items-center gap-2 relative">
+                    <span>📥</span> البريد الوارد
+                    <span id="adminUnreadCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-4 border-slate-900 hidden">0</span>
+                </button>
+                <button onclick="switchAdminTab('reports')" id="adminTabReports" class="shrink-0 px-8 py-4 bg-white/5 text-gray-400 rounded-2xl font-black hover:bg-white/10 transition-all flex items-center gap-2">
+                    <span>📊</span> الإحصائيات
+                </button>
+            </div>
+
+            <div id="adminContent" class="flex-1 overflow-y-auto bg-white/5 rounded-[3rem] p-8 border border-white/5">
+                </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update, get } 
+        from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+        // إعدادات Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEj9SshKzzAtRg55-UeMnSBXgTcs5---A",
+            authDomain: "omdelegate-f89d9.firebaseapp.com",
+            databaseURL: "https://omdelegate-f89d9-default-rtdb.firebaseio.com",
+            projectId: "omdelegate-f89d9",
+            storageBucket: "omdelegate-f89d9.firebasestorage.app",
+            messagingSenderId: "1067717279082",
+            appId: "1:1067717279082:web:2e74c38f22e63a3c577913"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // جعل الأدوات متاحة للسكربت الخارجي
+        window.fbDB = db;
+        window.fbRef = ref;
+        window.fbSet = set;
+        window.fbPush = push;
+        window.fbOnValue = onValue;
+        window.fbRemove = remove;
+        window.fbUpdate = update;
+        window.fbGet = get;
+
+        // إخفاء شاشة التحميل عند الجاهزية
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        window.dispatchEvent(new Event('firebaseReady'));
+    </script>
+
+    <script>
+        // --- البيانات الجغرافية ---
+        const omanData = {
+            "مسقط": ["السيب", "بوشر", "مطرح", "العامرات", "مسقط", "قريات"],
+            "ظفار": ["صلالة", "طاقة", "مرباط", "رخيوت", "ثمريت", "ضلكوت", "سدح", "شليم وجزر الحلانيات", "مقشن", "المزيونة"],
+            "الداخلية": ["نزوى", "بهلاء", "إزكي", "سمائل", "بدبد", "الحمراء", "أدم", "منح"],
+            "شمال الباطنة": ["صحار", "صحم", "السويق", "الخابورة", "لوى", "شناص"],
+            "جنوب الباطنة": ["الرستاق", "العوابي", "نخل", "وادي المعاول", "بركاء", "المصنعة"],
+            "شمال الشرقية": ["إبراء", "المضيبي", "بدية", "القابل", "دماء والطائيين", "وادي بني خالد"],
+            "جنوب الشرقية": ["صور", "الكامل والوافي", "جعلان بني بو حسن", "جعلان بني بو علي", "مصيرة"],
+            "الظاهرة": ["عبري", "ينقل", "ضنك"],
+            "البريمي": ["البريمي", "محضة", "السنينة"],
+            "الوسطى": ["هيماء", "الدقم", "محوت", "الجازر"],
+            "مسندم": ["خصب", "بخاء", "دباء", "مدحاء"]
+        };
+
+        // --- الحالة العامة للتطبيق ---
+        let appData = {
+            users: [],
+            orders: [],
+            couriers: [],
+            chat: {},
+            supportInbox: [],
+            currentUser: JSON.parse(localStorage.getItem('oman_user_session')) || null
+        };
+
+        let currentRoom = "المجلس العام";
+        let currentCMode = 'static';
+        let chatUnsub = null;
+
+        // --- تهيئة الاتصال السحابي ---
+        window.addEventListener('firebaseReady', () => {
+            initFirebaseListeners();
+            if(!appData.currentUser) {
+                document.getElementById('authScreen').classList.remove('hidden');
+            } else {
+                completeLoginFlow();
+            }
+        });
+
+        function initFirebaseListeners() {
+            // الاستماع للطلبات
+            window.fbOnValue(window.fbRef(window.fbDB, 'orders'), (snapshot) => {
+                appData.orders = snapshot.exists() ? Object.entries(snapshot.val()).map(([k,v]) => ({id: k, ...v})) : [];
+                renderOrders();
+            });
+
+            // الاستماع للمناديب
+            window.fbOnValue(window.fbRef(window.fbDB, 'couriers'), (snapshot) => {
+                appData.couriers = snapshot.exists() ? Object.entries(snapshot.val()).map(([k,v]) => ({id: k, ...v})) : [];
+                renderCouriers();
+            });
+
+            // الاستماع للدعم
+            window.fbOnValue(window.fbRef(window.fbDB, 'support'), (snapshot) => {
+                appData.supportInbox = snapshot.exists() ? Object.entries(snapshot.val()).map(([k,v]) => ({id: k, ...v})) : [];
+                checkSupportNotifications();
+                if(document.getElementById('supportModal').classList.contains('active')) renderSupportChat();
+            });
+
+            // الاستماع للمستخدمين (فقط لإدارة النظام)
+            window.fbOnValue(window.fbRef(window.fbDB, 'users'), (snapshot) => {
+                appData.users = snapshot.exists() ? Object.values(snapshot.val()) : [];
+            });
+        }
+
+        function completeLoginFlow() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('headerUserName').innerText = appData.currentUser.name;
+            fillGovs();
+            renderOrders();
+            renderCouriers();
+            renderRooms();
+            startVisitorCounter();
+        }
+
+        // --- إدارة الحسابات ---
+        async function handleSignup() {
+            const first = document.getElementById('signFirst').value.trim();
+            const tribe = document.getElementById('signTribe').value.trim();
+            const phone = document.getElementById('signPhone').value.trim();
+            const pass = document.getElementById('signPass').value.trim();
+
+            if(!first || !tribe || !phone || !pass) return alert("يرجى ملء كافة الحقول");
+            if(phone.length < 8) return alert("رقم الهاتف غير صحيح");
+            if(pass.length < 6) return alert("كلمة السر ضعيفة جداً");
+
+            const check = await window.fbGet(window.fbRef(window.fbDB, 'users/' + phone));
+            if(check.exists()) return alert("هذا الرقم مسجل مسبقاً، جرب تسجيل الدخول");
+
+            const newUser = {
+                id: phone,
+                name: first,
+                tribe: tribe,
+                phone: phone,
+                pass: pass,
+                role: 'user',
+                joinDate: new Date().toLocaleDateString('ar-OM')
+            };
+
+            await window.fbSet(window.fbRef(window.fbDB, 'users/' + phone), newUser);
+            appData.currentUser = newUser;
+            localStorage.setItem('oman_user_session', JSON.stringify(newUser));
+            location.reload();
+        }
+
+        async function handleLogin() {
+            const phone = document.getElementById('loginPhone').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
+            if(!phone || !pass) return alert("أدخل بيانات الدخول");
+
+            const snapshot = await window.fbGet(window.fbRef(window.fbDB, 'users/' + phone));
+            if(snapshot.exists() && snapshot.val().pass === pass) {
+                appData.currentUser = snapshot.val();
+                localStorage.setItem('oman_user_session', JSON.stringify(appData.currentUser));
+                location.reload();
+            } else {
+                alert("بيانات الدخول خاطئة، تأكد من الرقم وكلمة السر");
+            }
+        }
+
+        function handleForgotPass() {
+            const phone = document.getElementById('loginPhone').value.trim();
+            if(!phone) return alert("يرجى كتابة رقم هاتفك في الخانة أولاً");
+            
+            window.fbPush(window.fbRef(window.fbDB, 'support'), {
+                senderId: "system",
+                name: "طلب استرجاع مرور",
+                text: "المستخدم صاحب الرقم " + phone + " يطلب استعادة كلمة السر",
+                date: new Date().toLocaleString('ar-OM'),
+                read: false
+            });
+            alert("تم إرسال طلب المساعدة للإدارة، سنتواصل معك قريباً");
+        }
+
+        function toggleAuth(mode) {
+            const isLogin = mode === 'login';
+            document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+            document.getElementById('signupForm').classList.toggle('hidden', isLogin);
+            
+            document.getElementById('btnTabLogin').className = isLogin ? 
+                'flex-1 py-4 rounded-xl font-black transition-all bg-white shadow-md text-blue-600' : 
+                'flex-1 py-4 rounded-xl font-black transition-all text-gray-500 hover:text-gray-700';
+            
+            document.getElementById('btnTabSignup').className = !isLogin ? 
+                'flex-1 py-4 rounded-xl font-black transition-all bg-white shadow-md text-blue-600' : 
+                'flex-1 py-4 rounded-xl font-black transition-all text-gray-500 hover:text-gray-700';
+        }
+
+        // --- واجهة المستخدم الرئيسية ---
+        function fillGovs() {
+            const selects = ['reqGovFrom', 'reqGovTo', 'cGovSt', 'filterGov'];
+            const checklist = document.getElementById('govChecklist');
+            if(!checklist) return;
+            
+            checklist.innerHTML = "";
+            selects.forEach(id => {
+                const s = document.getElementById(id);
+                if(s) {
+                    s.innerHTML = `<option value="">اختر المحافظة</option>`;
+                    Object.keys(omanData).forEach(g => {
+                        s.innerHTML += `<option value="${g}">${g}</option>`;
+                    });
+                }
+            });
+
+            Object.keys(omanData).forEach(g => {
+                checklist.innerHTML += `
+                    <label class="flex items-center gap-3 bg-white p-4 rounded-2xl text-xs font-black border border-gray-100 hover:border-green-200 transition-all cursor-pointer">
+                        <input type="checkbox" value="${g}" class="gov-chk w-5 h-5 accent-green-600"> ${g}
+                    </label>
+                `;
+            });
+        }
+
+        function updateCities(govSelect, citySelectId, multiple = false, isFilter = false) {
+            const citySelect = document.getElementById(citySelectId);
+            const gov = govSelect.value;
+            citySelect.innerHTML = isFilter ? `<option value="الكل">كل المدن</option>` : "";
+            
+            if(gov && omanData[gov]) {
+                if(isFilter) document.getElementById('filterCityDiv').classList.remove('hidden');
+                omanData[gov].forEach(c => {
+                    citySelect.innerHTML += `<option value="${c}">${c}</option>`;
+                });
+            } else {
+                if(isFilter) document.getElementById('filterCityDiv').classList.add('hidden');
+            }
+        }
+
+        function renderOrders(list = appData.orders, showAll = false) {
+            const container = document.getElementById('ordersList');
+            const btnArea = document.getElementById('moreOrdersBtnArea');
+            if(!container) return;
+
+            // الفرز حسب الأحدث افتراضياً
+            const sorted = [...list].sort((a,b) => new Date(b.date) - new Date(a.date));
+            const items = showAll ? sorted : sorted.slice(0, 6);
+            
+            container.innerHTML = items.map(o => `
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden transition-all hover:shadow-xl hover:border-blue-100 group">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">📦</div>
+                            <div>
+                                <span class="text-[11px] font-black text-blue-600 block leading-none mb-1">${o.userName}</span>
+                                <p class="text-[9px] text-gray-400 font-bold">${o.date}</p>
+                            </div>
+                        </div>
+                        <div class="bg-blue-600 text-white px-4 py-2 rounded-2xl font-black text-lg shadow-lg shadow-blue-100 animate-pulse-slow">
+                            ${o.price} <span class="text-[10px]">ر.ع</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-slate-50 p-4 rounded-[1.5rem] mb-6 relative">
+                        <div class="flex flex-col">
+                            <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest">من</span>
+                            <span class="text-xs font-black text-gray-800">${o.from}</span>
+                        </div>
+                        <div class="text-blue-200 text-xl font-black">➔</div>
+                        <div class="flex flex-col text-left">
+                            <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest text-left">إلى</span>
+                            <span class="text-xs font-black text-gray-800">${o.to}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <a href="https://wa.me/968${o.phone}" target="_blank" class="flex-1 bg-green-600 text-white text-center py-4 rounded-2xl text-[11px] font-black hover:bg-green-700 transition-all flex items-center justify-center gap-2">
+                             تواصل الآن ✅
+                        </a>
+                        ${o.userId === appData.currentUser.id ? `
+                            <button onclick="deleteOrder('${o.id}')" class="bg-red-50 text-red-500 px-5 rounded-2xl text-[11px] font-black hover:bg-red-500 hover:text-white transition-all">حذف</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('') || '<div class="col-span-full py-20 text-center"><p class="text-gray-400 font-bold">لا توجد طلبات متاحة حالياً</p></div>';
+
+            btnArea.classList.toggle('hidden', showAll || list.length <= 6);
+            document.getElementById('ordersCount').innerText = list.length;
+        }
+
+        function renderCouriers(list = appData.couriers, showAll = false) {
+            const container = document.getElementById('couriersList');
+            const btnArea = document.getElementById('moreCouriersBtnArea');
+            if(!container) return;
+
+            const items = showAll ? list : list.slice(0, 6);
+
+            container.innerHTML = items.map(c => `
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 transition-all hover:shadow-xl hover:border-green-100">
+                    <div class="flex justify-between items-center mb-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-xl">👤</div>
+                            <div>
+                                <h4 class="font-black text-gray-900 text-sm">${c.userName}</h4>
+                                <span class="text-[9px] font-bold text-gray-400">مندوب مسجل</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] ${c.type === 'ثابت' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-green-50 text-green-600 border-green-100'} border px-3 py-1.5 rounded-full font-black">${c.type}</span>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl mb-5">
+                        <p class="text-[11px] text-gray-600 font-black leading-relaxed">
+                            ${c.details}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="https://wa.me/968${c.phone}" target="_blank" class="flex-1 bg-green-600 text-white text-center py-4 rounded-2xl text-[11px] font-black hover:bg-green-700 transition-all">اتصال مباشر 📞</a>
+                        ${c.userId === appData.currentUser.id ? `
+                            <button onclick="deleteCourier('${c.id}')" class="bg-red-50 text-red-500 px-5 rounded-2xl text-[11px] font-black hover:bg-red-500 hover:text-white transition-all">إزالة</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('') || '<div class="col-span-full py-20 text-center"><p class="text-gray-400 font-bold">لا يوجد مناديب متوفرين حالياً</p></div>';
+
+            btnArea.classList.toggle('hidden', showAll || list.length <= 6);
+            document.getElementById('couriersCount').innerText = list.length;
+        }
+
+        // --- العمليات (إضافة/حذف) ---
+        async function saveOrder() {
+            const gF = document.getElementById('reqGovFrom').value;
+            const cF = document.getElementById('reqCityFrom').value;
+            const gT = document.getElementById('reqGovTo').value;
+            const cT = document.getElementById('reqCityTo').value;
+            const pr = document.getElementById('reqPrice').value;
+            
+            if(!gF || !cF || !gT || !cT || !pr) return alert("أكمل جميع البيانات المطلوبة");
+
+            const newOrder = {
+                userId: appData.currentUser.id,
+                userName: appData.currentUser.name + " " + appData.currentUser.tribe,
+                phone: appData.currentUser.phone,
+                from: gF + " (" + cF + ")",
+                to: gT + " (" + cT + ")",
+                price: pr,
+                date: new Date().toLocaleString('ar-OM')
+            };
+
+            await window.fbPush(window.fbRef(window.fbDB, 'orders'), newOrder);
+            closeModal('requestModal');
+            alert("تم نشر طلبك بنجاح");
+        }
+
+        async function saveCourier() {
+            let details = "";
+            if(currentCMode === 'static') {
+                const gov = document.getElementById('cGovSt').value;
+                const cities = Array.from(document.getElementById('cCitySt').selectedOptions).map(o => o.value);
+                if(!gov || cities.length === 0) return alert("اختر المحافظة والمدن التي تغطيها");
+                details = `متواجد في ${gov} (يغطي: ${cities.join('، ')})`;
+            } else {
+                const govs = Array.from(document.querySelectorAll('.gov-chk:checked')).map(i => i.value);
+                if(govs.length === 0) return alert("اختر محافظتين على الأقل لخط السير");
+                details = `خط سير نشط يغطي: ${govs.join(' ➔ ')}`;
+            }
+
+            const newCourier = {
+                userId: appData.currentUser.id,
+                userName: appData.currentUser.name + " " + appData.currentUser.tribe,
+                phone: appData.currentUser.phone,
+                type: currentCMode === 'static' ? 'ثابت' : 'متحرك',
+                details: details,
+                date: Date.now()
+            };
+
+            await window.fbPush(window.fbRef(window.fbDB, 'couriers'), newCourier);
+            closeModal('courierRegModal');
+            alert("تم تفعيل حساب المندوب بنجاح");
+        }
+
+        async function deleteOrder(id) {
+            if(confirm("هل تريد حذف هذا الطلب نهائياً؟")) {
+                await window.fbRemove(window.fbRef(window.fbDB, 'orders/' + id));
+            }
+        }
+
+        async function deleteCourier(id) {
+            if(confirm("هل تريد إلغاء وضع المندوب؟")) {
+                await window.fbRemove(window.fbRef(window.fbDB, 'couriers/' + id));
+            }
+        }
+
+        // --- نظام الدردشة المطور ---
+        function renderRooms() {
+            const rooms = ["المجلس العام", ...Object.keys(omanData)];
+            document.getElementById('roomsList').innerHTML = rooms.map(room => `
+                <button onclick="switchRoom('${room}')" class="w-full text-right p-5 border-b border-gray-100 hover:bg-blue-50 transition-all font-black text-xs md:text-sm flex items-center gap-3 ${currentRoom === room ? 'bg-blue-50 text-blue-600 border-l-4 border-l-blue-600' : 'text-gray-500'}">
+                    <span class="opacity-50 text-lg">${room === 'المجلس العام' ? '🌍' : '📍'}</span>
+                    <span class="truncate">${room}</span>
+                </button>
+            `).join('');
+        }
+
+        function switchRoom(room) {
+            currentRoom = room;
+            document.getElementById('currentRoomName').innerText = room;
+            renderRooms();
+            
+            // إلغاء الاشتراك السابق
+            if(chatUnsub) chatUnsub();
+            
+            const chatRef = window.fbRef(window.fbDB, `chats/${room}`);
+            chatUnsub = window.fbOnValue(chatRef, (snapshot) => {
+                const container = document.getElementById('chatMessages');
+                const msgs = snapshot.exists() ? Object.values(snapshot.val()) : [];
+                
+                if(msgs.length === 0) {
+                    container.innerHTML = `<div class="flex-1 flex flex-col items-center justify-center opacity-30">
+                        <div class="text-6xl mb-4">💬</div>
+                        <p class="font-black">لا توجد رسائل بعد في ${room}</p>
+                    </div>`;
+                    return;
+                }
+
+                container.innerHTML = msgs.map(m => `
+                    <div class="flex flex-col ${m.userId === appData.currentUser.id ? 'items-end' : 'items-start'}">
+                        <div class="flex items-center gap-2 mb-1 px-2">
+                             <span class="text-[10px] font-black text-gray-400">${m.userName} (${m.tribe})</span>
+                        </div>
+                        <div class="p-4 max-w-[85%] font-bold text-sm shadow-sm relative ${m.userId === appData.currentUser.id ? 'chat-me' : 'chat-other'}">
+                            ${m.text}
+                            <span class="block text-[8px] mt-2 opacity-50 text-left">${new Date(m.time).toLocaleTimeString('ar-OM', {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    </div>
+                `).join('');
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const msg = {
+                userId: appData.currentUser.id,
+                userName: appData.currentUser.name,
+                tribe: appData.currentUser.tribe,
+                text: text,
+                time: Date.now()
+            };
+
+            input.value = "";
+            await window.fbPush(window.fbRef(window.fbDB, `chats/${currentRoom}`), msg);
+        }
+
+        // --- الدعم الفني ---
+        async function sendSupportMessage() {
+            const text = document.getElementById('supportText').value.trim();
+            if(!text) return;
+
+            const msg = {
+                senderId: appData.currentUser.id,
+                name: appData.currentUser.name + " " + appData.currentUser.tribe,
+                text: text,
+                date: new Date().toLocaleString('ar-OM'),
+                read: false
+            };
+
+            await window.fbPush(window.fbRef(window.fbDB, 'support'), msg);
+            document.getElementById('supportText').value = "";
+            alert("تم إرسال رسالتك، سيرد عليك المسؤولون هنا قريباً");
+        }
+
+        function renderSupportChat() {
+            const container = document.getElementById('supportChat');
+            const myMsgs = appData.supportInbox.filter(m => m.senderId === appData.currentUser.id);
+            
+            if(myMsgs.length === 0) {
+                container.innerHTML = `<div class="flex-1 flex flex-col items-center justify-center opacity-30 text-center">
+                    <div class="text-5xl mb-4">🎧</div>
+                    <p class="text-xs font-black leading-relaxed">أهلاً بك في الدعم الفني<br>أرسل استفسارك وسنرد عليك في أسرع وقت</p>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = myMsgs.map(m => `
+                <div class="flex flex-col items-end gap-2">
+                    <div class="p-4 bg-white border border-gray-100 rounded-[1.5rem] text-xs font-black self-end shadow-sm">
+                        <span class="text-[9px] text-blue-500 block mb-1">سؤالك:</span>
+                        ${m.text}
+                    </div>
+                    ${m.reply ? `
+                        <div class="p-4 bg-green-600 text-white rounded-[1.5rem] text-xs font-black self-start shadow-xl shadow-green-100 max-w-[90%]">
+                            <span class="text-[9px] opacity-70 block mb-1">رد الإدارة:</span>
+                            ${m.reply}
+                        </div>
+                    ` : `
+                        <div class="text-[9px] text-gray-400 font-bold px-4">جاري انتظار رد المسؤول...</div>
+                    `}
+                </div>
+            `).join('');
+            
+            // وسم الرسائل كمقروءة للمستخدم عند فتح المحادثة
+            myMsgs.forEach(m => {
+                if(m.reply && !m.read) {
+                    window.fbUpdate(window.fbRef(window.fbDB, `support/${m.id}`), { read: true });
+                }
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function checkSupportNotifications() {
+            const hasReply = appData.supportInbox.some(m => m.senderId === appData.currentUser?.id && m.reply && !m.read);
+            document.getElementById('supportNotification').classList.toggle('hidden', !hasReply);
+        }
+
+        // --- لوحة التحكم (الأدمن) ---
+        function askAdminPassword() {
+            const pass = prompt("يرجى إدخال رمز الوصول للإدارة:");
+            if(pass === "oman2024") {
+                openModal('adminModal');
+                switchAdminTab('users');
+            } else if(pass !== null) {
+                alert("رمز الوصول غير صحيح!");
+            }
+        }
+
+        function switchAdminTab(tab) {
+            const content = document.getElementById('adminContent');
+            const tabs = ['adminTabUsers', 'adminTabInbox', 'adminTabReports'];
+            tabs.forEach(t => document.getElementById(t).className = "shrink-0 px-8 py-4 bg-white/5 text-gray-400 rounded-2xl font-black hover:bg-white/10 transition-all flex items-center gap-2 relative");
+            
+            if(tab === 'users') {
+                document.getElementById('adminTabUsers').className = "shrink-0 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2";
+                content.innerHTML = `<div class="grid gap-4">${appData.users.map(u => `
+                    <div class="bg-white/5 p-6 rounded-3xl flex justify-between items-center border border-white/5">
+                        <div>
+                            <p class="text-white font-black">${u.name} ${u.tribe}</p>
+                            <p class="text-blue-400 text-xs font-bold">${u.phone}</p>
+                        </div>
+                        <button onclick="adminDeleteUser('${u.phone}')" class="bg-red-500/10 text-red-500 p-3 rounded-xl hover:bg-red-500 hover:text-white transition-all">حذف العضو</button>
+                    </div>
+                `).join('')}</div>`;
+            } else if(tab === 'inbox') {
+                document.getElementById('adminTabInbox').className = "shrink-0 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2 relative";
+                content.innerHTML = `<div class="space-y-6">${appData.supportInbox.map(m => `
+                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/5">
+                        <div class="flex justify-between mb-4">
+                            <b class="text-blue-400 font-black">${m.name}</b>
+                            <span class="text-[10px] text-gray-500 font-bold">${m.date}</span>
+                        </div>
+                        <p class="text-white text-sm mb-6 leading-relaxed bg-white/5 p-4 rounded-2xl">${m.text}</p>
+                        ${m.reply ? `
+                            <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl">
+                                <p class="text-green-500 text-xs font-black mb-1">ردك السابق:</p>
+                                <p class="text-gray-300 text-sm">${m.reply}</p>
+                            </div>
+                        ` : `
+                            <div class="flex gap-2">
+                                <input type="text" id="reply-${m.id}" placeholder="اكتب ردك هنا..." class="flex-1 bg-white/10 border-none rounded-xl p-4 text-white text-sm outline-none focus:ring-1 ring-blue-500">
+                                <button onclick="adminReply('${m.id}')" class="bg-blue-600 text-white px-6 rounded-xl font-black">إرسال الرد</button>
+                            </div>
+                        `}
+                    </div>
+                `).join('')}</div>`;
+            } else if(tab === 'reports') {
+                document.getElementById('adminTabReports').className = "shrink-0 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2";
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/5">
+                            <p class="text-gray-400 font-black mb-2 uppercase tracking-tighter">إجمالي المستخدمين</p>
+                            <h4 class="text-5xl text-white font-black">${appData.users.length}</h4>
+                        </div>
+                        <div class="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/5">
+                            <p class="text-gray-400 font-black mb-2 uppercase tracking-tighter">الطلبات النشطة</p>
+                            <h4 class="text-5xl text-blue-500 font-black">${appData.orders.length}</h4>
+                        </div>
+                        <div class="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/5">
+                            <p class="text-gray-400 font-black mb-2 uppercase tracking-tighter">المناديب المسجلين</p>
+                            <h4 class="text-5xl text-green-500 font-black">${appData.couriers.length}</h4>
+                        </div>
+                        <div class="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/5">
+                            <p class="text-gray-400 font-black mb-2 uppercase tracking-tighter">رسائل الدعم</p>
+                            <h4 class="text-5xl text-orange-500 font-black">${appData.supportInbox.length}</h4>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function adminReply(msgId) {
+            const input = document.getElementById(`reply-${msgId}`);
+            if(!input.value.trim()) return;
+            await window.fbUpdate(window.fbRef(window.fbDB, `support/${msgId}`), {
+                reply: input.value.trim(),
+                read: false
+            });
+            switchAdminTab('inbox');
+        }
+
+        async function adminDeleteUser(phone) {
+            if(confirm("هل أنت متأكد من حذف هذا العضو نهائياً من قاعدة البيانات؟")) {
+                await window.fbRemove(window.fbRef(window.fbDB, 'users/' + phone));
+                switchAdminTab('users');
+            }
+        }
+
+        // --- وظائف عامة مساعدة ---
+        function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = 'auto'; }
+
+        function openEditProfile() {
+            const u = appData.currentUser;
+            document.getElementById('editName').value = u.name;
+            document.getElementById('editTribe').value = u.tribe;
+            document.getElementById('editPhone').value = u.phone;
+            openModal('editProfileModal');
+        }
+
+        async function saveProfile() {
+            const newName = document.getElementById('editName').value.trim();
+            const newTribe = document.getElementById('editTribe').value.trim();
+            const newPass = document.getElementById('editPass').value.trim();
+
+            const updates = { name: newName, tribe: newTribe };
+            if(newPass) updates.pass = newPass;
+
+            await window.fbUpdate(window.fbRef(window.fbDB, 'users/' + appData.currentUser.phone), updates);
+            appData.currentUser = { ...appData.currentUser, ...updates };
+            localStorage.setItem('oman_user_session', JSON.stringify(appData.currentUser));
+            alert("تم تحديث بياناتك بنجاح");
+            location.reload();
+        }
+
+        function openMyAds() {
+            const myOrders = appData.orders.filter(o => o.userId === appData.currentUser.id);
+            const myCouriers = appData.couriers.filter(c => c.userId === appData.currentUser.id);
+            
+            document.getElementById('myOrdersList').innerHTML = myOrders.map(o => `
+                <div class="p-4 bg-blue-50/50 rounded-2xl flex justify-between items-center border border-blue-100">
+                    <div>
+                        <p class="text-xs font-black text-blue-900">${o.from} ➔ ${o.to}</p>
+                        <p class="text-[9px] text-blue-400 font-bold mt-1">${o.date}</p>
+                    </div>
+                    <button onclick="deleteOrder('${o.id}')" class="bg-white text-red-500 p-2 rounded-xl text-[10px] font-black shadow-sm">حذف</button>
+                </div>
+            `).join('') || '<p class="text-center text-[10px] text-gray-400">لم تنشر أي طلبات بعد</p>';
+
+            document.getElementById('myCouriersList').innerHTML = myCouriers.map(c => `
+                <div class="p-4 bg-green-50/50 rounded-2xl flex justify-between items-center border border-green-100">
+                    <div>
+                        <p class="text-xs font-black text-green-900">${c.type} - ${c.details.substring(0,30)}...</p>
+                    </div>
+                    <button onclick="deleteCourier('${c.id}')" class="bg-white text-red-500 p-2 rounded-xl text-[10px] font-black shadow-sm">إلغاء المندوب</button>
+                </div>
+            `).join('') || '<p class="text-center text-[10px] text-gray-400">حسابك ليس في وضع المندوب حالياً</p>';
+
+            openModal('myAdsModal');
+        }
+
+        function applyFilter() {
+            const gov = document.getElementById('filterGov').value;
+            const city = document.getElementById('filterCity').value;
+            const sort = document.getElementById('filterSort').value;
+
+            let fOrders = [...appData.orders];
+            let fCouriers = [...appData.couriers];
+
+            if(gov) {
+                fOrders = fOrders.filter(o => o.from.includes(gov) || o.to.includes(gov));
+                fCouriers = fCouriers.filter(c => c.details.includes(gov));
+            }
+
+            if(city && city !== 'الكل') {
+                fOrders = fOrders.filter(o => o.from.includes(city) || o.to.includes(city));
+                fCouriers = fCouriers.filter(c => c.details.includes(city));
+            }
+
+            // الترتيب
+            if(sort === 'new') fOrders.sort((a,b) => new Date(b.date) - new Date(a.date));
+            else if(sort === 'old') fOrders.sort((a,b) => new Date(a.date) - new Date(b.date));
+            else if(sort === 'price_high') fOrders.sort((a,b) => b.price - a.price);
+            else if(sort === 'price_low') fOrders.sort((a,b) => a.price - b.price);
+
+            renderOrders(fOrders, true);
+            renderCouriers(fCouriers, true);
+            closeModal('filterModal');
+        }
+
+        function toggleCourierMode(mode) {
+            currentCMode = mode;
+            document.getElementById('cStaticForm').classList.toggle('hidden', mode !== 'static');
+            document.getElementById('cMobileForm').classList.toggle('hidden', mode !== 'mobile');
+            
+            document.getElementById('btnCStatic').className = mode === 'static' ? 
+                'flex-1 p-5 bg-white border-2 border-green-600 rounded-[1.8rem] font-black text-green-700 shadow-sm transition-all flex flex-col items-center' : 
+                'flex-1 p-5 rounded-[1.8rem] font-black text-gray-400 hover:text-gray-600 transition-all flex flex-col items-center';
+            
+            document.getElementById('btnCMobile').className = mode === 'mobile' ? 
+                'flex-1 p-5 bg-white border-2 border-green-600 rounded-[1.8rem] font-black text-green-700 shadow-sm transition-all flex flex-col items-center' : 
+                'flex-1 p-5 rounded-[1.8rem] font-black text-gray-400 hover:text-gray-600 transition-all flex flex-col items-center';
+        }
+
+        function startVisitorCounter() {
+            let base = 20000;
+            setInterval(() => {
+                base += Math.floor(Math.random() * 4);
+                const el = document.getElementById('visitorCounter');
+                if(el) el.innerText = base.toLocaleString();
+            }, 5000);
+        }
+
+        function confirmLogout() {
+            if(confirm("هل أنت متأكد من رغبتك في تسجيل الخروج؟")) {
+                localStorage.removeItem('oman_user_session');
+                location.reload();
+            }
+        }
+
+        async function confirmDeleteAccount() {
+            if(confirm("⚠️ تحذير: سيتم حذف كافة بياناتك وإعلاناتك للأبد. هل تود الاستمرار؟")) {
+                await window.fbRemove(window.fbRef(window.fbDB, 'users/' + appData.currentUser.phone));
+                // حذف إعلاناته أيضاً
+                appData.orders.filter(o => o.userId === appData.currentUser.id).forEach(o => deleteOrder(o.id));
+                appData.couriers.filter(c => c.userId === appData.currentUser.id).forEach(c => deleteCourier(c.id));
+                
+                localStorage.removeItem('oman_user_session');
+                location.reload();
+            }
+        }
+
+        function openRequestModal() { openModal('requestModal'); }
+        function openCourierRegModal() { openModal('courierRegModal'); toggleCourierMode('static'); }
+        function openFilter() { openModal('filterModal'); }
+        function openSupport() { openModal('supportModal'); renderSupportChat(); }
+        function openChat() { openModal('chatModal'); switchRoom('المجلس العام'); }
+
+    </script>
+</body>
+</html>
