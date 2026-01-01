@@ -13,6 +13,9 @@
         .modal.active { display: flex; align-items: center; justify-content: center; }
         .chat-me { background: #dcf8c6; border-radius: 15px 15px 0 15px; border: 1px solid #c5e1a5; }
         .chat-other { background: #ffffff; border-radius: 15px 15px 15px 0; border: 1px solid #e2e8f0; }
+        /* Dropdown Menu for Reports */
+        .dropdown-menu { display: none; position: absolute; left: 10px; top: 30px; background: white; border: 1px solid #eee; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 20; }
+        .dropdown-menu.show { display: block; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -82,7 +85,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <button onclick="openChat()" class="p-3 bg-gray-50 text-gray-700 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all relative group">
+                <button onclick="openRoomSelection()" class="p-3 bg-gray-50 text-gray-700 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all relative group">
                     <span class="text-xl">💬</span>
                     <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white hidden" id="chatNotif">0</span>
                 </button>
@@ -186,6 +189,15 @@
         </section>
 
     </main>
+
+    <div id="roomSelectionModal" class="modal">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
+            <button onclick="closeModal('roomSelectionModal')" class="absolute left-6 top-6 text-gray-300 hover:text-gray-600 text-2xl">✕</button>
+            <h3 class="text-2xl font-black mb-4 text-center">اختر غرفة الدردشة</h3>
+            <div id="roomSelectionList" class="space-y-3 max-h-[60vh] overflow-y-auto">
+                </div>
+        </div>
+    </div>
 
     <div id="requestModal" class="modal">
         <div class="bg-white w-full max-w-lg rounded-[3rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
@@ -313,7 +325,7 @@
             </div>
             
             <div class="flex flex-1 overflow-hidden">
-                <div class="w-20 md:w-64 bg-gray-50 border-l border-gray-100 overflow-y-auto shrink-0 scroll-smooth" id="roomsList">
+                <div class="hidden md:block w-20 md:w-64 bg-gray-50 border-l border-gray-100 overflow-y-auto shrink-0 scroll-smooth" id="roomsList">
                     </div>
                 
                 <div class="flex-1 flex flex-col bg-slate-100 relative">
@@ -382,7 +394,7 @@
                 </div>
             </div>
             <div class="flex gap-4 mt-10">
-                <button onclick="closeModal('editProfileModal')" class="flex-1 py-4 bg-gray-100 rounded-2xl font-black text-gray-500">إلغاء</button>
+                <button onclick="closeModal('editProfileModal')" class="flex-1 py-4 bg-gray-100 rounded-2xl font-black text-gray-500">إغلاق</button>
                 <button onclick="saveProfile()" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100">حفظ التغييرات</button>
             </div>
         </div>
@@ -429,6 +441,10 @@
                 </button>
                 <button onclick="switchAdminTab('reports')" id="adminTabReports" class="shrink-0 px-8 py-4 bg-white/5 text-gray-400 rounded-2xl font-black hover:bg-white/10 transition-all flex items-center gap-2">
                     <span>📊</span> الإحصائيات
+                </button>
+                <button onclick="switchAdminTab('complaints')" id="adminTabComplaints" class="shrink-0 px-8 py-4 bg-white/5 text-gray-400 rounded-2xl font-black hover:bg-white/10 transition-all flex items-center gap-2 relative">
+                     <span>🚨</span> البلاغات
+                     <span id="adminReportsCount" class="bg-red-500 text-white text-[10px] px-2 rounded-full hidden">0</span>
                 </button>
             </div>
 
@@ -494,6 +510,7 @@
             couriers: [],
             chat: {},
             supportInbox: [],
+            reports: [], // For reports
             currentUser: JSON.parse(localStorage.getItem('oman_user_session')) || null
         };
 
@@ -511,18 +528,64 @@
             }
         });
 
+        // دالة الحذف التلقائي بعد 48 ساعة
+        function checkAndRemoveExpiredData(path, snapshot) {
+            if(!snapshot.exists()) return;
+            const data = snapshot.val();
+            const NOW = Date.now();
+            const EXPIRE_MS = 48 * 60 * 60 * 1000; // 48 ساعة بالميلي ثانية
+
+            Object.entries(data).forEach(([key, val]) => {
+                let itemTime = val.timestamp || val.date;
+                 // إذا كان التخزين القديم يعتمد على التاريخ النصي فقط، نحاول استخراج الوقت منه أو نتجاوزه
+                // للتأكد، نعتمد على timestamp كرقم
+                if (typeof itemTime === 'number') {
+                    if (NOW - itemTime > EXPIRE_MS) {
+                        window.fbRemove(window.fbRef(window.fbDB, `${path}/${key}`));
+                    }
+                }
+            });
+        }
+
+        // تنظيف الغرف
+        function cleanOldChats() {
+            const rooms = ["المجلس العام", ...Object.keys(omanData)];
+            rooms.forEach(room => {
+                window.fbGet(window.fbRef(window.fbDB, `chats/${room}`)).then(snapshot => {
+                    checkAndRemoveExpiredData(`chats/${room}`, snapshot);
+                });
+            });
+        }
+
         function initFirebaseListeners() {
-            // الاستماع للطلبات
+            // الاستماع للطلبات + الحذف التلقائي
             window.fbOnValue(window.fbRef(window.fbDB, 'orders'), (snapshot) => {
+                checkAndRemoveExpiredData('orders', snapshot);
                 appData.orders = snapshot.exists() ? Object.entries(snapshot.val()).map(([k,v]) => ({id: k, ...v})) : [];
                 renderOrders();
             });
 
-            // الاستماع للمناديب
+            // الاستماع للمناديب + الحذف التلقائي
             window.fbOnValue(window.fbRef(window.fbDB, 'couriers'), (snapshot) => {
+                checkAndRemoveExpiredData('couriers', snapshot);
                 appData.couriers = snapshot.exists() ? Object.entries(snapshot.val()).map(([k,v]) => ({id: k, ...v})) : [];
                 renderCouriers();
             });
+
+            // الاستماع للبلاغات
+            window.fbOnValue(window.fbRef(window.fbDB, 'reports'), (snapshot) => {
+                 appData.reports = snapshot.exists() ? Object.entries(snapshot.val()).map(([k,v]) => ({id: k, ...v})) : [];
+                 const count = appData.reports.length;
+                 const badge = document.getElementById('adminReportsCount');
+                 if(count > 0) {
+                     badge.innerText = count;
+                     badge.classList.remove('hidden');
+                 } else {
+                     badge.classList.add('hidden');
+                 }
+            });
+
+            cleanOldChats();
 
             // الاستماع للدعم
             window.fbOnValue(window.fbRef(window.fbDB, 'support'), (snapshot) => {
@@ -543,7 +606,7 @@
             fillGovs();
             renderOrders();
             renderCouriers();
-            renderRooms();
+            renderRooms(); // Populate room list
             startVisitorCounter();
         }
 
@@ -662,17 +725,58 @@
             }
         }
 
+        // --- Render Functions (Modified for limits and Reports) ---
+
+        function toggleMenu(id) {
+            const menu = document.getElementById(`menu-${id}`);
+            // Hide all other menus first
+            document.querySelectorAll('.dropdown-menu').forEach(m => {
+                if(m.id !== `menu-${id}`) m.classList.remove('show');
+            });
+            menu.classList.toggle('show');
+        }
+        
+        // Close menus when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.matches('.menu-btn')) {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            }
+        });
+
+        async function reportItem(type, id, title) {
+            if(confirm("هل تريد الإبلاغ عن هذا الإعلان كمخالف؟")) {
+                const report = {
+                    itemId: id,
+                    type: type, // 'orders' or 'couriers'
+                    title: title,
+                    reporter: appData.currentUser.phone,
+                    date: new Date().toLocaleString('ar-OM'),
+                    timestamp: Date.now()
+                };
+                await window.fbPush(window.fbRef(window.fbDB, 'reports'), report);
+                alert("تم إرسال البلاغ للإدارة للمراجعة");
+            }
+        }
+
         function renderOrders(list = appData.orders, showAll = false) {
             const container = document.getElementById('ordersList');
             const btnArea = document.getElementById('moreOrdersBtnArea');
             if(!container) return;
 
-            // الفرز حسب الأحدث افتراضياً
-            const sorted = [...list].sort((a,b) => new Date(b.date) - new Date(a.date));
-            const items = showAll ? sorted : sorted.slice(0, 6);
+            const sorted = [...list].sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            // Limit to 2 items initially
+            const items = showAll ? sorted : sorted.slice(0, 2);
             
             container.innerHTML = items.map(o => `
-                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden transition-all hover:shadow-xl hover:border-blue-100 group">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-visible transition-all hover:shadow-xl hover:border-blue-100 group">
+                    
+                    <div class="absolute top-4 left-4 z-30">
+                        <button onclick="toggleMenu('${o.id}')" class="menu-btn text-gray-400 text-2xl font-black px-2 hover:text-gray-600">⋮</button>
+                        <div id="menu-${o.id}" class="dropdown-menu p-2 w-32">
+                            <button onclick="reportItem('orders', '${o.id}', '${o.from} الى ${o.to}')" class="w-full text-right text-xs font-black text-red-500 hover:bg-red-50 p-2 rounded-lg">🚩 إبلاغ مخالفة</button>
+                        </div>
+                    </div>
+
                     <div class="flex justify-between items-start mb-6">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">📦</div>
@@ -709,7 +813,8 @@
                 </div>
             `).join('') || '<div class="col-span-full py-20 text-center"><p class="text-gray-400 font-bold">لا توجد طلبات متاحة حالياً</p></div>';
 
-            btnArea.classList.toggle('hidden', showAll || list.length <= 6);
+            // Show More logic based on length > 2
+            btnArea.classList.toggle('hidden', showAll || list.length <= 2);
             document.getElementById('ordersCount').innerText = list.length;
         }
 
@@ -718,10 +823,19 @@
             const btnArea = document.getElementById('moreCouriersBtnArea');
             if(!container) return;
 
-            const items = showAll ? list : list.slice(0, 6);
+            // Limit to 2 items initially
+            const items = showAll ? list : list.slice(0, 2);
 
             container.innerHTML = items.map(c => `
-                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 transition-all hover:shadow-xl hover:border-green-100">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 transition-all hover:shadow-xl hover:border-green-100 relative overflow-visible group">
+                    
+                    <div class="absolute top-4 left-4 z-30">
+                        <button onclick="toggleMenu('${c.id}')" class="menu-btn text-gray-400 text-2xl font-black px-2 hover:text-gray-600">⋮</button>
+                        <div id="menu-${c.id}" class="dropdown-menu p-2 w-32">
+                            <button onclick="reportItem('couriers', '${c.id}', '${c.userName}')" class="w-full text-right text-xs font-black text-red-500 hover:bg-red-50 p-2 rounded-lg">🚩 إبلاغ مخالفة</button>
+                        </div>
+                    </div>
+
                     <div class="flex justify-between items-center mb-5">
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-xl">👤</div>
@@ -746,7 +860,7 @@
                 </div>
             `).join('') || '<div class="col-span-full py-20 text-center"><p class="text-gray-400 font-bold">لا يوجد مناديب متوفرين حالياً</p></div>';
 
-            btnArea.classList.toggle('hidden', showAll || list.length <= 6);
+            btnArea.classList.toggle('hidden', showAll || list.length <= 2);
             document.getElementById('couriersCount').innerText = list.length;
         }
 
@@ -767,7 +881,8 @@
                 from: gF + " (" + cF + ")",
                 to: gT + " (" + cT + ")",
                 price: pr,
-                date: new Date().toLocaleString('ar-OM')
+                date: new Date().toLocaleString('ar-OM'),
+                timestamp: Date.now() // For 48h auto delete
             };
 
             await window.fbPush(window.fbRef(window.fbDB, 'orders'), newOrder);
@@ -794,7 +909,8 @@
                 phone: appData.currentUser.phone,
                 type: currentCMode === 'static' ? 'ثابت' : 'متحرك',
                 details: details,
-                date: Date.now()
+                date: Date.now(),
+                timestamp: Date.now() // For 48h auto delete
             };
 
             await window.fbPush(window.fbRef(window.fbDB, 'couriers'), newCourier);
@@ -814,27 +930,57 @@
             }
         }
 
-        // --- نظام الدردشة المطور ---
+        // --- نظام الدردشة المطور (اختيار الغرفة أولاً) ---
         function renderRooms() {
             const rooms = ["المجلس العام", ...Object.keys(omanData)];
-            document.getElementById('roomsList').innerHTML = rooms.map(room => `
-                <button onclick="switchRoom('${room}')" class="w-full text-right p-5 border-b border-gray-100 hover:bg-blue-50 transition-all font-black text-xs md:text-sm flex items-center gap-3 ${currentRoom === room ? 'bg-blue-50 text-blue-600 border-l-4 border-l-blue-600' : 'text-gray-500'}">
-                    <span class="opacity-50 text-lg">${room === 'المجلس العام' ? '🌍' : '📍'}</span>
-                    <span class="truncate">${room}</span>
-                </button>
-            `).join('');
+            // Fill Main Chat Sidebar (if desktop)
+            const desktopList = document.getElementById('roomsList');
+            if(desktopList) {
+                desktopList.innerHTML = rooms.map(room => `
+                    <button onclick="switchRoom('${room}')" class="w-full text-right p-5 border-b border-gray-100 hover:bg-blue-50 transition-all font-black text-xs md:text-sm flex items-center gap-3 ${currentRoom === room ? 'bg-blue-50 text-blue-600 border-l-4 border-l-blue-600' : 'text-gray-500'}">
+                        <span class="opacity-50 text-lg">${room === 'المجلس العام' ? '🌍' : '📍'}</span>
+                        <span class="truncate">${room}</span>
+                    </button>
+                `).join('');
+            }
+            // Fill Selection Modal (New Feature)
+            const selectionList = document.getElementById('roomSelectionList');
+            if(selectionList) {
+                 selectionList.innerHTML = rooms.map(room => `
+                    <button onclick="selectRoomAndOpen('${room}')" class="w-full p-4 bg-gray-50 rounded-xl hover:bg-blue-600 hover:text-white transition-all font-bold text-sm text-right flex items-center justify-between group">
+                        <span>${room}</span>
+                        <span class="text-gray-300 group-hover:text-white">👈</span>
+                    </button>
+                `).join('');
+            }
+        }
+        
+        function openRoomSelection() {
+            renderRooms();
+            openModal('roomSelectionModal');
+        }
+        
+        function selectRoomAndOpen(room) {
+            closeModal('roomSelectionModal');
+            openChat(room);
+        }
+
+        function openChat(room = 'المجلس العام') {
+            openModal('chatModal');
+            switchRoom(room);
         }
 
         function switchRoom(room) {
             currentRoom = room;
             document.getElementById('currentRoomName').innerText = room;
-            renderRooms();
+            renderRooms(); // update active state in desktop sidebar
             
             // إلغاء الاشتراك السابق
             if(chatUnsub) chatUnsub();
             
             const chatRef = window.fbRef(window.fbDB, `chats/${room}`);
             chatUnsub = window.fbOnValue(chatRef, (snapshot) => {
+                checkAndRemoveExpiredData(`chats/${room}`, snapshot); // Check exp
                 const container = document.getElementById('chatMessages');
                 const msgs = snapshot.exists() ? Object.values(snapshot.val()) : [];
                 
@@ -871,7 +1017,8 @@
                 userName: appData.currentUser.name,
                 tribe: appData.currentUser.tribe,
                 text: text,
-                time: Date.now()
+                time: Date.now(),
+                timestamp: Date.now() // For auto delete
             };
 
             input.value = "";
@@ -925,7 +1072,6 @@
                 </div>
             `).join('');
             
-            // وسم الرسائل كمقروءة للمستخدم عند فتح المحادثة
             myMsgs.forEach(m => {
                 if(m.reply && !m.read) {
                     window.fbUpdate(window.fbRef(window.fbDB, `support/${m.id}`), { read: true });
@@ -953,8 +1099,11 @@
 
         function switchAdminTab(tab) {
             const content = document.getElementById('adminContent');
-            const tabs = ['adminTabUsers', 'adminTabInbox', 'adminTabReports'];
-            tabs.forEach(t => document.getElementById(t).className = "shrink-0 px-8 py-4 bg-white/5 text-gray-400 rounded-2xl font-black hover:bg-white/10 transition-all flex items-center gap-2 relative");
+            const tabs = ['adminTabUsers', 'adminTabInbox', 'adminTabReports', 'adminTabComplaints'];
+            tabs.forEach(t => {
+                const el = document.getElementById(t);
+                if(el) el.className = "shrink-0 px-8 py-4 bg-white/5 text-gray-400 rounded-2xl font-black hover:bg-white/10 transition-all flex items-center gap-2 relative";
+            });
             
             if(tab === 'users') {
                 document.getElementById('adminTabUsers').className = "shrink-0 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2";
@@ -1011,6 +1160,23 @@
                         </div>
                     </div>
                 `;
+            } else if (tab === 'complaints') {
+                document.getElementById('adminTabComplaints').className = "shrink-0 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2 relative";
+                 content.innerHTML = `<div class="space-y-4">
+                    ${appData.reports.length === 0 ? '<p class="text-gray-500 text-center">لا توجد بلاغات حالياً</p>' : ''}
+                    ${appData.reports.map(r => `
+                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 flex justify-between items-center">
+                        <div>
+                             <p class="text-red-400 font-black text-sm mb-1">بلاغ عن: ${r.type === 'orders' ? 'طلب توصيل' : 'حساب مندوب'}</p>
+                             <p class="text-white text-lg font-bold mb-1">${r.title}</p>
+                             <p class="text-gray-500 text-xs">المُبلغ: ${r.reporter} | التاريخ: ${r.date}</p>
+                        </div>
+                        <div class="flex gap-2">
+                             <button onclick="adminDeleteReportedItem('${r.type}', '${r.itemId}', '${r.id}')" class="bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-700">حذف المحتوى المخالف</button>
+                             <button onclick="adminDismissReport('${r.id}')" class="bg-gray-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-700">تجاهل البلاغ</button>
+                        </div>
+                    </div>
+                `).join('')}</div>`;
             }
         }
 
@@ -1028,6 +1194,25 @@
             if(confirm("هل أنت متأكد من حذف هذا العضو نهائياً من قاعدة البيانات؟")) {
                 await window.fbRemove(window.fbRef(window.fbDB, 'users/' + phone));
                 switchAdminTab('users');
+            }
+        }
+
+        // --- وظائف إدارة البلاغات ---
+        async function adminDeleteReportedItem(type, itemId, reportId) {
+            if(confirm("هل أنت متأكد من حذف هذا المحتوى وحذف البلاغ؟")) {
+                // Delete the item (order or courier)
+                await window.fbRemove(window.fbRef(window.fbDB, `${type}/${itemId}`));
+                // Delete the report itself
+                await window.fbRemove(window.fbRef(window.fbDB, `reports/${reportId}`));
+                alert("تم حذف المحتوى المخالف بنجاح");
+                switchAdminTab('complaints');
+            }
+        }
+        
+        async function adminDismissReport(reportId) {
+             if(confirm("هل تريد حذف هذا البلاغ فقط والاحتفاظ بالمحتوى؟")) {
+                await window.fbRemove(window.fbRef(window.fbDB, `reports/${reportId}`));
+                switchAdminTab('complaints');
             }
         }
 
@@ -1159,7 +1344,6 @@
         function openCourierRegModal() { openModal('courierRegModal'); toggleCourierMode('static'); }
         function openFilter() { openModal('filterModal'); }
         function openSupport() { openModal('supportModal'); renderSupportChat(); }
-        function openChat() { openModal('chatModal'); switchRoom('المجلس العام'); }
 
     </script>
 </body>
