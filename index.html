@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة عمان للمناديب</title>
+    <title>مندوب عُمان</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700;900&display=swap" rel="stylesheet">
@@ -31,42 +31,84 @@
         <div class="text-xl">جاري الاتصال بقاعدة البيانات...</div>
     </div>
 
-    <div id="authScreen" class="fixed inset-0 bg-white z-[100] hidden flex items-center justify-center p-6">
-        <div class="w-full max-w-md">
-            <div class="text-center mb-8">
-                <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl mb-6 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                    <span class="text-white text-4xl font-black">🇴🇲</span>
+    <div id="authScreen" class="fixed inset-0 bg-white z-[100] hidden overflow-y-auto">
+        <div class="min-h-full flex items-center justify-center p-6">
+            <div class="w-full max-w-md">
+                <div class="text-center mb-8 mt-4">
+                    <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl mb-6 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <span class="text-white text-4xl font-black">🇴🇲
+</span>
+                    </div>
+                    <h1 class="text-3xl font-black text-gray-800 mb-2">مندوب عُمان
+</h1>
+                    <p class="text-gray-500 font-bold text-sm">الخدمة الافضل  في سلطنة عمان</p>
                 </div>
-                <h1 class="text-3xl font-black text-gray-800 mb-2">منصة المناديب الأولى</h1>
-                <p class="text-gray-500 font-bold text-sm">خدمة التوصيل الأسرع في سلطنة عمان</p>
-            </div>
 
-            <div class="bg-gray-100 p-1.5 rounded-2xl mb-8 flex shadow-inner">
-                <button onclick="toggleAuth('login')" id="btnTabLogin" class="flex-1 py-4 rounded-xl font-black transition-all bg-white shadow-md text-blue-600">تسجيل دخول</button>
-                <button onclick="toggleAuth('signup')" id="btnTabSignup" class="flex-1 py-4 rounded-xl font-black transition-all text-gray-500 hover:text-gray-700">إنشاء حساب</button>
-            </div>
+                <div class="bg-gray-100 p-1.5 rounded-2xl mb-8 flex shadow-inner">
+                    <button onclick="toggleAuth('login')" id="btnTabLogin" class="flex-1 py-4 rounded-xl font-black transition-all bg-white shadow-md text-blue-600">تسجيل دخول</button>
+                    <button onclick="toggleAuth('signup')" id="btnTabSignup" class="flex-1 py-4 rounded-xl font-black transition-all text-gray-500 hover:text-gray-700">إنشاء حساب</button>
+                </div>
 
-            <div id="loginForm" class="space-y-5">
+                <div id="loginForm" class="space-y-5">
+                    <div class="relative">
+                        <span class="absolute right-4 top-4 text-gray-400">📱</span>
+                        <input type="number" id="loginPhone" placeholder="رقم الهاتف (9xxxxxxx)" class="w-full p-4 pr-12 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-bold">
+                    </div>
+                    <div class="relative">
+                        <span class="absolute right-4 top-4 text-gray-400">🔒</span>
+                        <input type="password" id="loginPass" placeholder="كلمة السر" class="w-full p-4 pr-12 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-bold">
+                    </div>
+                    <button onclick="handleLogin()" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-[0.98] transition-all text-lg">دخول للمنصة</button>
+                    <button onclick="openRecoveryModal()" class="w-full text-sm text-gray-400 font-bold hover:text-blue-600 transition-colors">نسيت كلمة السر؟ استعادة الحساب</button>
+                </div>
+
+                <div id="signupForm" class="space-y-4 hidden pb-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="signFirst" placeholder="الاسم الأول" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                        <input type="text" id="signTribe" placeholder="القبيلة" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                    </div>
+                    <input type="number" id="signPhone" placeholder="رقم الهاتف العماني" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                    <input type="password" id="signPass" placeholder="كلمة السر (6 أرقام على الأقل)" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+                    
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                        <p class="text-[11px] font-black text-blue-600 mb-2">🛡️ سؤال الأمان (لاستعادة حسابك عند النسيان):</p>
+                        <label class="block text-xs font-bold mb-2 text-gray-600">ما هو اسم والدك؟</label>
+                        <input type="text" id="signSecurityAnswer" placeholder="اكتب الإجابة هنا" class="w-full p-3 bg-white border border-blue-200 rounded-xl outline-none focus:border-blue-500 font-bold">
+                    </div>
+                    
+                    <button onclick="handleSignup()" class="w-full py-5 bg-green-600 text-white rounded-2xl font-black shadow-xl shadow-green-100 hover:bg-green-700 active:scale-[0.98] transition-all text-lg">إنشاء حسابي الآن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="recoveryModal" class="modal" style="z-index: 9999 !important;">
+        <div class="bg-white w-full max-w-md rounded-[3rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
+            <button onclick="closeModal('recoveryModal')" class="absolute left-6 top-6 text-gray-300 hover:text-gray-600 text-2xl">✕</button>
+            <h3 class="text-2xl font-black mb-2">🔑 استعادة كلمة المرور</h3>
+            <p class="text-xs text-gray-400 font-bold mb-6">اتبع الخطوات لاسترجاع الوصول لحسابك</p>
+
+            <div id="recoveryStep1" class="space-y-4">
                 <div class="relative">
                     <span class="absolute right-4 top-4 text-gray-400">📱</span>
-                    <input type="number" id="loginPhone" placeholder="رقم الهاتف (9xxxxxxx)" class="w-full p-4 pr-12 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-bold">
+                    <input type="number" id="recoveryPhone" placeholder="أدخل رقم هاتفك المسجل" class="w-full p-4 pr-12 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 font-bold">
                 </div>
-                <div class="relative">
-                    <span class="absolute right-4 top-4 text-gray-400">🔒</span>
-                    <input type="password" id="loginPass" placeholder="كلمة السر" class="w-full p-4 pr-12 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-bold">
-                </div>
-                <button onclick="handleLogin()" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-[0.98] transition-all text-lg">دخول للمنصة</button>
-                <button onclick="handleForgotPass()" class="w-full text-sm text-gray-400 font-bold hover:text-blue-600 transition-colors">نسيت كلمة السر؟ اطلب مساعدة</button>
+                <button onclick="checkPhoneForRecovery()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg">التالي</button>
             </div>
 
-            <div id="signupForm" class="space-y-4 hidden">
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="signFirst" placeholder="الاسم الأول" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
-                    <input type="text" id="signTribe" placeholder="القبيلة" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
+            <div id="recoveryStep2" class="space-y-4 hidden">
+                <div class="bg-yellow-50 p-4 rounded-2xl border border-yellow-100 mb-4">
+                    <p class="text-xs font-black text-yellow-700">سؤال الأمان:</p>
+                    <p class="text-lg font-black text-gray-800">ما هو اسم والدك؟</p>
                 </div>
-                <input type="number" id="signPhone" placeholder="رقم الهاتف العماني" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
-                <input type="password" id="signPass" placeholder="كلمة السر (6 أرقام على الأقل)" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-green-500 font-bold">
-                <button onclick="handleSignup()" class="w-full py-5 bg-green-600 text-white rounded-2xl font-black shadow-xl shadow-green-100 hover:bg-green-700 active:scale-[0.98] transition-all text-lg">إنشاء حسابي الآن</button>
+                <input type="text" id="recoveryAnswer" placeholder="اكتب الإجابة" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 font-bold">
+                <button onclick="verifySecurityAnswer()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg">تحقق من الإجابة</button>
+            </div>
+
+            <div id="recoveryStep3" class="space-y-4 hidden">
+                <p class="text-green-600 font-black text-sm text-center">✅ تم التحقق بنجاح! اختر كلمة مرور جديدة</p>
+                <input type="password" id="newRecoveryPass" placeholder="كلمة السر الجديدة" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-blue-500 font-bold">
+                <button onclick="updatePassword()" class="w-full py-4 bg-green-600 text-white rounded-2xl font-black shadow-lg">تحديث وفتح الحساب</button>
             </div>
         </div>
     </div>
@@ -76,7 +118,7 @@
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-100">🇴🇲</div>
                 <div>
-                    <h2 class="font-black text-gray-900 text-lg leading-tight tracking-tighter">منصة المناديب</h2>
+                    <h2 class="font-black text-gray-900 text-lg leading-tight tracking-tighter">مندوب عُمان</h2>
                     <div class="flex items-center gap-1.5">
                         <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
                         <span class="text-[11px] text-gray-500 font-black"><span id="visitorCounter">20,000</span> نشط الآن</span>
@@ -94,7 +136,7 @@
                     <button class="flex items-center gap-2 bg-gray-50 p-2 pr-4 rounded-2xl border border-transparent group-hover:border-blue-100 transition-all">
                         <div class="text-right hidden sm:block">
                             <p class="text-[10px] text-gray-400 font-bold leading-none mb-1">مرحباً بك</p>
-                            <p class="text-xs font-black text-gray-800 leading-none" id="headerUserName">المستخدم</p>
+                            <p class="text-xs font-black text-gray-800" id="headerUserName">المستخدم</p>
                         </div>
                         <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-black">👤</div>
                     </button>
@@ -517,6 +559,7 @@
         let currentRoom = "المجلس العام";
         let currentCMode = 'static';
         let chatUnsub = null;
+        let recoveryTempData = { phone: '', storedAnswer: '' };
 
         // --- تهيئة الاتصال السحابي ---
         window.addEventListener('firebaseReady', () => {
@@ -537,8 +580,6 @@
 
             Object.entries(data).forEach(([key, val]) => {
                 let itemTime = val.timestamp || val.date;
-                 // إذا كان التخزين القديم يعتمد على التاريخ النصي فقط، نحاول استخراج الوقت منه أو نتجاوزه
-                // للتأكد، نعتمد على timestamp كرقم
                 if (typeof itemTime === 'number') {
                     if (NOW - itemTime > EXPIRE_MS) {
                         window.fbRemove(window.fbRef(window.fbDB, `${path}/${key}`));
@@ -602,11 +643,14 @@
 
         function completeLoginFlow() {
             document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('headerUserName').innerText = appData.currentUser.name;
+            // تحديث اسم المستخدم في الهيدر
+            if (appData.currentUser) {
+                document.getElementById('headerUserName').innerText = appData.currentUser.name;
+            }
             fillGovs();
-            renderOrders();
-            renderCouriers();
-            renderRooms(); // Populate room list
+            renderOrders(); // إعادة تحميل لتفعيل أزرار الحذف الخاصة بالمستخدم
+            renderCouriers(); // إعادة تحميل لتفعيل أزرار الحذف الخاصة بالمستخدم
+            renderRooms();
             startVisitorCounter();
         }
 
@@ -616,8 +660,9 @@
             const tribe = document.getElementById('signTribe').value.trim();
             const phone = document.getElementById('signPhone').value.trim();
             const pass = document.getElementById('signPass').value.trim();
+            const security = document.getElementById('signSecurityAnswer').value.trim();
 
-            if(!first || !tribe || !phone || !pass) return alert("يرجى ملء كافة الحقول");
+            if(!first || !tribe || !phone || !pass || !security) return alert("يرجى ملء كافة الحقول بما فيها سؤال الأمان");
             if(phone.length < 8) return alert("رقم الهاتف غير صحيح");
             if(pass.length < 6) return alert("كلمة السر ضعيفة جداً");
 
@@ -630,14 +675,18 @@
                 tribe: tribe,
                 phone: phone,
                 pass: pass,
+                securityAnswer: security.toLowerCase(), // حفظ الإجابة
                 role: 'user',
                 joinDate: new Date().toLocaleDateString('ar-OM')
             };
 
             await window.fbSet(window.fbRef(window.fbDB, 'users/' + phone), newUser);
+            
+            // الدخول الفوري بدون تحديث الصفحة
             appData.currentUser = newUser;
             localStorage.setItem('oman_user_session', JSON.stringify(newUser));
-            location.reload();
+            completeLoginFlow();
+            alert("تم إنشاء حسابك بنجاح!");
         }
 
         async function handleLogin() {
@@ -650,24 +699,12 @@
             if(snapshot.exists() && snapshot.val().pass === pass) {
                 appData.currentUser = snapshot.val();
                 localStorage.setItem('oman_user_session', JSON.stringify(appData.currentUser));
-                location.reload();
+                
+                // الدخول الفوري بدون تحديث الصفحة
+                completeLoginFlow();
             } else {
                 alert("بيانات الدخول خاطئة، تأكد من الرقم وكلمة السر");
             }
-        }
-
-        function handleForgotPass() {
-            const phone = document.getElementById('loginPhone').value.trim();
-            if(!phone) return alert("يرجى كتابة رقم هاتفك في الخانة أولاً");
-            
-            window.fbPush(window.fbRef(window.fbDB, 'support'), {
-                senderId: "system",
-                name: "طلب استرجاع مرور",
-                text: "المستخدم صاحب الرقم " + phone + " يطلب استعادة كلمة السر",
-                date: new Date().toLocaleString('ar-OM'),
-                read: false
-            });
-            alert("تم إرسال طلب المساعدة للإدارة، سنتواصل معك قريباً");
         }
 
         function toggleAuth(mode) {
@@ -682,6 +719,57 @@
             document.getElementById('btnTabSignup').className = !isLogin ? 
                 'flex-1 py-4 rounded-xl font-black transition-all bg-white shadow-md text-blue-600' : 
                 'flex-1 py-4 rounded-xl font-black transition-all text-gray-500 hover:text-gray-700';
+        }
+
+        // --- نظام استعادة كلمة المرور ---
+        function openRecoveryModal() {
+            document.getElementById('recoveryStep1').classList.remove('hidden');
+            document.getElementById('recoveryStep2').classList.add('hidden');
+            document.getElementById('recoveryStep3').classList.add('hidden');
+            openModal('recoveryModal');
+        }
+
+        async function checkPhoneForRecovery() {
+            const phone = document.getElementById('recoveryPhone').value.trim();
+            if(!phone) return alert("أدخل رقم الهاتف");
+
+            const snapshot = await window.fbGet(window.fbRef(window.fbDB, 'users/' + phone));
+            if(!snapshot.exists()) return alert("هذا الرقم غير مسجل لدينا!");
+
+            recoveryTempData.phone = phone;
+            // جلب الإجابة المخزنة (إذا لم يكن لديه سؤال أمان، نمنعه)
+            if(!snapshot.val().securityAnswer) return alert("هذا الحساب قديم ولم يقم بتعيين سؤال أمان، يرجى التواصل مع الدعم.");
+            
+            recoveryTempData.storedAnswer = snapshot.val().securityAnswer;
+
+            document.getElementById('recoveryStep1').classList.add('hidden');
+            document.getElementById('recoveryStep2').classList.remove('hidden');
+        }
+
+        function verifySecurityAnswer() {
+            const answer = document.getElementById('recoveryAnswer').value.trim().toLowerCase();
+            if(answer === recoveryTempData.storedAnswer) {
+                document.getElementById('recoveryStep2').classList.add('hidden');
+                document.getElementById('recoveryStep3').classList.remove('hidden');
+            } else {
+                alert("❌ الإجابة خاطئة! حاول مرة أخرى.");
+            }
+        }
+
+        async function updatePassword() {
+            const newPass = document.getElementById('newRecoveryPass').value.trim();
+            if(newPass.length < 6) return alert("كلمة السر يجب أن تكون 6 خانات فأكثر");
+
+            await window.fbUpdate(window.fbRef(window.fbDB, 'users/' + recoveryTempData.phone), {
+                pass: newPass
+            });
+
+            alert("✅ تم تحديث كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.");
+            closeModal('recoveryModal');
+            // تفريغ الحقول
+            document.getElementById('recoveryPhone').value = '';
+            document.getElementById('recoveryAnswer').value = '';
+            document.getElementById('newRecoveryPass').value = '';
         }
 
         // --- واجهة المستخدم الرئيسية ---
@@ -852,7 +940,7 @@
                         </p>
                     </div>
                     <div class="flex gap-2">
-                        <a href="https://wa.me/968${c.phone}" target="_blank" class="flex-1 bg-green-600 text-white text-center py-4 rounded-2xl text-[11px] font-black hover:bg-green-700 transition-all">اتصال مباشر 📞</a>
+                        <a href="https://wa.me/968${c.phone}" target="_blank" class="flex-1 bg-green-600 text-white text-center py-4 rounded-2xl text-[11px] font-black hover:bg-green-700 transition-all">واتساب📞</a>
                         ${c.userId === appData.currentUser.id ? `
                             <button onclick="deleteCourier('${c.id}')" class="bg-red-50 text-red-500 px-5 rounded-2xl text-[11px] font-black hover:bg-red-500 hover:text-white transition-all">إزالة</button>
                         ` : ''}
@@ -1348,3 +1436,4 @@
     </script>
 </body>
 </html>
+
