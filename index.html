@@ -2,14 +2,20 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مندوب عُمان</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogItmF2YbYr9mI2Kgg2LnZhdin2YYiLAogICJzaG9ydF9uYW1lIjogItmF2YbYr9mI2Kgg2LnZhdin2YYiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29xvcijogIiNmZmZmZmIiwKICAidGhlbWVfY29xvcijogIiMyNTYzeWIiLAogICJpY29ucyI6IFt7CiAgICAic3JjIjogImh0dHBzOi8vY2RuLmpzZGVsaXZyLm5ldC9naC90d2l0dGVyL3R3ZW1vamlAL2Fzc2V0cy83Mng3Mi8xZjFmNC0xZjFmOS5wbmciLAogICAgInNpemVzIjogIjE5MngxOTIiLAogICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogIH1dCn0=">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <style>
         body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; overflow-y: auto; padding: 10px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; overflow-y: auto; padding: 10px; backdrop-filter: blur(5px); }
         .modal.active { display: flex; align-items: center; justify-content: center; }
         .chat-me { background: #dcf8c6; border-radius: 15px 15px 0 15px; border: 1px solid #c5e1a5; }
         .chat-other { background: #ffffff; border-radius: 15px 15px 15px 0; border: 1px solid #e2e8f0; }
@@ -22,6 +28,16 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        
+        /* تحسين شكل السهم */
+        .arrow-container {
+            width: 40px; height: 40px;
+            background: #eff6ff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #2563eb;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+        }
     </style>
 </head>
 <body class="pb-20">
@@ -36,11 +52,9 @@
             <div class="w-full max-w-md">
                 <div class="text-center mb-8 mt-4">
                     <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl mb-6 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                        <span class="text-white text-4xl font-black">🇴🇲
-</span>
+                        <span class="text-white text-4xl font-black">🇴🇲</span>
                     </div>
-                    <h1 class="text-3xl font-black text-gray-800 mb-2">مندوب عُمان
-</h1>
+                    <h1 class="text-3xl font-black text-gray-800 mb-2">مندوب عُمان</h1>
                     <p class="text-gray-500 font-bold text-sm">الخدمة الافضل  في سلطنة عمان</p>
                 </div>
 
@@ -127,6 +141,13 @@
             </div>
 
             <div class="flex items-center gap-3">
+                <button onclick="openDownloadModal()" class="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2.5 rounded-2xl font-black text-xs shadow-lg hover:shadow-blue-200 transition-all active:scale-95">
+                    <span>📲</span> تحميل التطبيق
+                </button>
+                <button onclick="openDownloadModal()" class="md:hidden p-3 bg-gray-50 text-blue-600 rounded-2xl hover:bg-blue-50 transition-all">
+                    <span>📲</span>
+                </button>
+
                 <button onclick="openRoomSelection()" class="p-3 bg-gray-50 text-gray-700 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all relative group">
                     <span class="text-xl">💬</span>
                     <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white hidden" id="chatNotif">0</span>
@@ -231,6 +252,58 @@
         </section>
 
     </main>
+
+    <div id="downloadAppModal" class="modal">
+        <div class="bg-white w-full max-w-md rounded-[3rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
+            <button onclick="closeModal('downloadAppModal')" class="absolute left-6 top-6 text-gray-300 hover:text-gray-600 text-2xl">✕</button>
+            
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-blue-600 rounded-[2rem] mx-auto flex items-center justify-center text-4xl shadow-xl shadow-blue-200 mb-4">
+                    📱
+                </div>
+                <h3 class="text-2xl font-black mb-2 text-gray-800">حمل تطبيق "مندوب عُمان"</h3>
+                <p class="text-gray-500 text-xs font-bold px-4">استمتع بتجربة أسرع، إشعارات فورية، ووصول أسهل للخدمات بتثبيت الموقع كتطبيق في جهازك.</p>
+            </div>
+
+            <div class="space-y-4">
+                <button onclick="installPWA('android')" class="w-full flex items-center gap-4 bg-gray-50 p-4 rounded-2xl hover:bg-green-50 border border-transparent hover:border-green-200 transition-all group">
+                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center text-2xl">🤖</div>
+                    <div class="text-right flex-1">
+                        <h4 class="font-black text-gray-800 group-hover:text-green-700">Android (Samsung, Huawei...)</h4>
+                        <p class="text-[10px] text-gray-400">تحميل مباشر وتثبيت</p>
+                    </div>
+                    <span class="text-gray-300">⬇️</span>
+                </button>
+
+                <button onclick="installPWA('ios')" class="w-full flex items-center gap-4 bg-gray-50 p-4 rounded-2xl hover:bg-gray-100 border border-transparent hover:border-gray-300 transition-all group">
+                    <div class="w-12 h-12 bg-gray-200 text-gray-800 rounded-xl flex items-center justify-center text-2xl">🍎</div>
+                    <div class="text-right flex-1">
+                        <h4 class="font-black text-gray-800">iPhone / iPad (iOS)</h4>
+                        <p class="text-[10px] text-gray-400">طريقة التثبيت السريع</p>
+                    </div>
+                    <span class="text-gray-300">⬇️</span>
+                </button>
+
+                <button onclick="installPWA('windows')" class="w-full flex items-center gap-4 bg-gray-50 p-4 rounded-2xl hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all group">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl">💻</div>
+                    <div class="text-right flex-1">
+                        <h4 class="font-black text-gray-800 group-hover:text-blue-700">Windows PC</h4>
+                        <p class="text-[10px] text-gray-400">تثبيت على سطح المكتب</p>
+                    </div>
+                    <span class="text-gray-300">⬇️</span>
+                </button>
+            </div>
+
+            <div id="iosInstructions" class="hidden mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-200 text-center animate-in fade-in">
+                <p class="text-xs font-black text-gray-700 mb-2">📥 لتثبيت التطبيق في الآيفون:</p>
+                <ol class="text-[10px] text-gray-500 font-bold space-y-1 text-right list-decimal pr-4">
+                    <li>اضغط على زر <span class="text-blue-600">"مشاركة" (Share)</span> في أسفل المتصفح.</li>
+                    <li>اختر <span class="text-blue-600">"إضافة إلى الصفحة الرئيسية" (Add to Home Screen)</span>.</li>
+                    <li>اضغط "إضافة" وسيظهر التطبيق مع برامجك.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
 
     <div id="roomSelectionModal" class="modal">
         <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in duration-300">
@@ -560,6 +633,43 @@
         let currentCMode = 'static';
         let chatUnsub = null;
         let recoveryTempData = { phone: '', storedAnswer: '' };
+        let deferredPrompt; // PWA Prompt
+
+        // --- منطق PWA وتثبيت التطبيق ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        // إظهار النافذة بعد دقيقة
+        setTimeout(() => {
+            // تحقق بسيط إذا لم يكن مثبتاً بالفعل (هذا ليس دقيقاً 100% في كل المتصفحات)
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                openDownloadModal();
+            }
+        }, 60000); // 60000ms = 1 minute
+
+        function openDownloadModal() {
+            openModal('downloadAppModal');
+        }
+
+        async function installPWA(platform) {
+            if(platform === 'ios') {
+                document.getElementById('iosInstructions').classList.remove('hidden');
+                return;
+            }
+
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                    closeModal('downloadAppModal');
+                }
+            } else {
+                alert("جهازك قد لا يدعم التثبيت المباشر، أو أن التطبيق مثبت بالفعل. يمكنك استخدام خيار 'إضافة للشاشة الرئيسية' من إعدادات المتصفح.");
+            }
+        }
 
         // --- تهيئة الاتصال السحابي ---
         window.addEventListener('firebaseReady', () => {
@@ -571,12 +681,12 @@
             }
         });
 
-        // دالة الحذف التلقائي بعد 48 ساعة
+        // دالة الحذف التلقائي (تم تعديلها لأسبوع)
         function checkAndRemoveExpiredData(path, snapshot) {
             if(!snapshot.exists()) return;
             const data = snapshot.val();
             const NOW = Date.now();
-            const EXPIRE_MS = 48 * 60 * 60 * 1000; // 48 ساعة بالميلي ثانية
+            const EXPIRE_MS = 7 * 24 * 60 * 60 * 1000; // أسبوع كامل (7 أيام)
 
             Object.entries(data).forEach(([key, val]) => {
                 let itemTime = val.timestamp || val.date;
@@ -883,7 +993,13 @@
                             <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest">من</span>
                             <span class="text-xs font-black text-gray-800">${o.from}</span>
                         </div>
-                        <div class="text-blue-200 text-xl font-black">➔</div>
+                        
+                        <div class="arrow-container">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </div>
+
                         <div class="flex flex-col text-left">
                             <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest text-left">إلى</span>
                             <span class="text-xs font-black text-gray-800">${o.to}</span>
@@ -970,7 +1086,7 @@
                 to: gT + " (" + cT + ")",
                 price: pr,
                 date: new Date().toLocaleString('ar-OM'),
-                timestamp: Date.now() // For 48h auto delete
+                timestamp: Date.now() // For 7 days auto delete
             };
 
             await window.fbPush(window.fbRef(window.fbDB, 'orders'), newOrder);
@@ -998,7 +1114,7 @@
                 type: currentCMode === 'static' ? 'ثابت' : 'متحرك',
                 details: details,
                 date: Date.now(),
-                timestamp: Date.now() // For 48h auto delete
+                timestamp: Date.now() // For 7 days auto delete
             };
 
             await window.fbPush(window.fbRef(window.fbDB, 'couriers'), newCourier);
@@ -1436,4 +1552,3 @@
     </script>
 </body>
 </html>
-
